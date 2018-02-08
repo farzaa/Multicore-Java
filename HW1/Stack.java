@@ -1,16 +1,21 @@
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class Stack {
+public class Stack<T> extends Thread{
 
     AtomicInteger numOps = new AtomicInteger(0);
+    AtomicInteger popCounter = new AtomicInteger(0);
+
+    // keep just one reference to the head!
     AtomicReference<Node> head = new AtomicReference<Node>();
 
+    int id = (int) Thread.currentThread().getId();
+
     class Node {
-        Integer val;
+        T val;
         Node next;
 
-        Node(Integer _val) {
+        Node(T _val) {
             val = _val;
         }
     }
@@ -19,59 +24,53 @@ public class Stack {
         head.set(null);
     }
 
-    public Boolean push(Integer x) {
-        Node localHead = head.get();
-
-        // We want a new node ot push.
+    public Boolean push(T x) {
         Node brandNewNode = new Node(x);
-        brandNewNode.next = localHead;
-
-        // create a local copy to make sure we are looking at the right head.
         while(true) {
+            // create a local copy of head.
+            // i do this to make sure the value of localHead does not change
+            // within the scope of the function even if the actual head changes.
+            // also, move the next pointer of our new node to localHead.
+            Node localHead = head.get();
+            brandNewNode.next = localHead;
+
+            // we ONLY want to swap heads if the head is == to our localHead we created.
+            // if its not, we know that some other thread interrupted and changed our head.
+            // in the case, this compareAndSet will FAIL.
             if (head.compareAndSet(localHead, brandNewNode)) {
+                System.out.println("Pushed... " + brandNewNode.val);
                 numOps.getAndIncrement();
                 break;
             }
         }
-        return null;
+
+        return true;
     }
 
-    public Integer pop() {
-        // Check if head is null.
-        // Get head, pop, -- num ops.
-        if (head.get() == null) {
-            return null;
+    public T pop() {
+        // this is where it gets tricky.
+        // the pop function may get interrupted at any moment.
+        while(true) {
+            Node localHead = head.get();
+            if (localHead == null) {
+                return null;
+            }
+
+            // this is a strategy i found online
+            // int localPopCount = popCounter.get();
+            // where a pop counter is used to make sure we don't set the wrong head, but i actually don't see the point here.
+            // we can easily do this by simply checking the memory address of head with that of localHead
+            // if these don't match, then just try again later.
+            if(head.compareAndSet(localHead, localHead.next)) {
+                System.out.println("Popped... " + localHead.val);
+                numOps.getAndIncrement();
+                return localHead.val;
+            }
         }
-        // TODO: Can't head change here?
-        head.set(head.get().next);
-
-        numOps.getAndIncrement();
-        return 0;
     }
 
-    public int getNumOps() {
+    public Integer getNumOps() {
         return numOps.get();
-    }
-
-
-    public static void main(String args[]) {
-        Stack s = new Stack();
-        s.pop();
-        s.push(1);
-        s.push(2);
-        s.push(3);
-        s.push(1);
-        s.push(2);
-        s.push(3);
-        s.pop();
-
-        Node headOfStack = s.head.get();
-        while(headOfStack != null) {
-            System.out.println(headOfStack.val);
-            headOfStack = headOfStack.next;
-        }
-
-        System.out.printf("NumOps... %d\n", s.numOps.get());
     }
 
 }
