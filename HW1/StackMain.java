@@ -1,7 +1,7 @@
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class StackMain<T> extends Thread {
-    static Stack<Integer> stack = new Stack<Integer>q();
+    static Stack<Integer> stack = new Stack<Integer>();
     static AtomicInteger numDone = new AtomicInteger(0);
     static AtomicInteger operations = new AtomicInteger(0);
 
