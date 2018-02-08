@@ -1,11 +1,12 @@
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class StackMain<T> extends Thread {
-    static Stack stack = new Stack();
+    static Stack<Integer> stack = new Stack<Integer>q();
     static AtomicInteger numDone = new AtomicInteger(0);
     static AtomicInteger operations = new AtomicInteger(0);
 
-    static int THREAD_COUNT = 10;
+    static int THREAD_COUNT = 5;
+    static int OPERATIONS_PER_THREAD = 10;
 
 
     public static void main(String args[]){
@@ -34,7 +35,7 @@ public class StackMain<T> extends Thread {
     public void run() {
         int id = (int) Thread.currentThread().getId();
         // for every thread, spawn some pop and push operations.
-        for(int i = 0; i < 1000; i++) {
+        for(int i = 0; i < OPERATIONS_PER_THREAD; i++) {
             if (i % 3 == 0) {
                 // only increment the counter if we didn't get back null!
                 if (stack.pop() != null) {
